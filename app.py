@@ -1,33 +1,29 @@
 from flask import Flask, request, jsonify
-import numpy as np
+from flask_cors import CORS
 from sklearn.cluster import KMeans
+import numpy as np
 
 app = Flask(__name__)
+CORS(app)  # Разрешаем CORS для всех маршрутов
 
-@app.route('/api/clusterize', methods=['POST'])
-def clusterize():
-    data = request.json
-    locations = np.array(data.get('locations', []))
+@app.route('/clusters', methods=['POST'])
+def cluster_data():
+    data = request.get_json()
+    locations = data.get('locations', [])
     num_clusters = data.get('num_clusters', 2)
 
-    if len(locations) < 2:
-        return jsonify({'error': 'Недостаточно точек для кластеризации'}), 400
+    if len(locations) < num_clusters:
+        return jsonify({'error': 'Недостаточно данных для кластеризации'}), 400
 
-    # Выполняем кластеризацию
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-    kmeans.fit(locations)
-    centers = kmeans.cluster_centers_.tolist()
-    labels = kmeans.labels_.tolist()
+    locations = np.array(locations)
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(locations)
 
-    # Формируем ответ
-    clusters = {i: [] for i in range(num_clusters)}
-    for idx, label in enumerate(labels):
-        clusters[label].append(locations[idx].tolist())
+    clusters = {
+        'labels': kmeans.labels_.tolist(),
+        'centers': kmeans.cluster_centers_.tolist(),
+    }
 
-    return jsonify({
-        'centers': centers,
-        'clusters': clusters
-    })
+    return jsonify(clusters)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)
