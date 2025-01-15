@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sklearn.cluster import KMeans
 import numpy as np
+import os  # Для чтения переменной PORT
 
 app = Flask(__name__)
 CORS(app)  # Разрешаем CORS для всех маршрутов
@@ -26,4 +27,5 @@ def cluster_data():
     return jsonify(clusters)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))  # Используем порт из переменной окружения
+    app.run(host='0.0.0.0', port=port, debug=True)
